@@ -11,3 +11,8 @@ pgvector==0.5.0
 pydantic==2.13.5
 pydantic-settings==2.15.0
 python-dotenv==1.2.4
+
+# Text Parsing & Chunking
+langchain-text-splitters
+pypdf
+python-multipart
