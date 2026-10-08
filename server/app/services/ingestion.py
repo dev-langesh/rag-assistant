@@ -12,7 +12,7 @@ splitter = RecursiveCharacterTextSplitter(
 )
 
 def extract_text_from_file(file_bytes: bytes, filename: str) -> str:
-    """Extracts raw text based on file extension."""
+    # Extracts raw text based on file extension.
     if filename.lower().endswith(".pdf"):
         reader = PdfReader(io.BytesIO(file_bytes))
         extracted_pages = []
@@ -26,7 +26,7 @@ def extract_text_from_file(file_bytes: bytes, filename: str) -> str:
     return file_bytes.decode("utf-8", errors="ignore")
 
 def chunk_text(text: str) -> List[str]:
-    """Splits raw text into overlapping semantic chunks."""
+    # Splits raw text into overlapping semantic chunks.
     cleaned_text = text.strip()
     if not cleaned_text:
         return []

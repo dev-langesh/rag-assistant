@@ -68,12 +68,11 @@ async def hybrid_search(
     match_count: int = 20,
     session: Optional[AsyncSession] = None,
 ) -> List[SearchResult]:
-    """
-    Executes hybrid search combining dense semantic embeddings and sparse full-text search
-    in parallel using PostgreSQL CTEs and window functions (ROW_NUMBER()).
-    Results are merged using Reciprocal Rank Fusion (RRF):
-    RRF_Score = 1 / (k + rank_dense) + 1 / (k + rank_sparse)
-    """
+    # Executes hybrid search combining dense semantic embeddings and sparse full-text search
+    # in parallel using PostgreSQL CTEs and window functions (ROW_NUMBER()).
+    # Results are merged using Reciprocal Rank Fusion (RRF):
+    # RRF_Score = 1 / (k + rank_dense) + 1 / (k + rank_sparse)
+    
     cleaned_query = query.strip()
     if not cleaned_query:
         return []

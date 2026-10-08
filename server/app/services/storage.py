@@ -16,11 +16,10 @@ async def store_document(
     embeddings: Optional[List[List[float]]] = None,
     session: Optional[AsyncSession] = None,
 ) -> Document:
-    """
-    Stores a document and its chunks in PostgreSQL in a single atomic transaction.
-    Computes dense vector embeddings (FastEmbed) and PostgreSQL native tsvector
-    (to_tsvector('english', content)) for hybrid sparse-dense search.
-    """
+    # Stores a document and its chunks in PostgreSQL in a single atomic transaction.
+    # Computes dense vector embeddings (FastEmbed) and PostgreSQL native tsvector
+    # (to_tsvector('english', content)) for hybrid sparse-dense search.
+    
     if not chunks:
         raise ValueError("Cannot store document with empty chunks")
 

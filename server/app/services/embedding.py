@@ -8,7 +8,7 @@ _model: TextEmbedding | None = None
 
 
 def get_embedding_model(model_name: str = DEFAULT_MODEL_NAME) -> TextEmbedding:
-    """Returns a singleton instance of the FastEmbed TextEmbedding model."""
+    # Returns a singleton instance of the FastEmbed TextEmbedding model.
     global _model
     if _model is None:
         _model = TextEmbedding(model_name=model_name)
@@ -16,7 +16,7 @@ def get_embedding_model(model_name: str = DEFAULT_MODEL_NAME) -> TextEmbedding:
 
 
 def generate_embeddings(texts: Sequence[str], model_name: str = DEFAULT_MODEL_NAME) -> List[List[float]]:
-    """Generates dense vector embeddings (768-dim) for a list of texts."""
+    # Generates dense vector embeddings (768-dim) for a list of texts.
     if not texts:
         return []
     model = get_embedding_model(model_name)
@@ -25,5 +25,5 @@ def generate_embeddings(texts: Sequence[str], model_name: str = DEFAULT_MODEL_NA
 
 
 def generate_query_embedding(query: str, model_name: str = DEFAULT_MODEL_NAME) -> List[float]:
-    """Generates a dense vector embedding (768-dim) for a single query."""
+    # Generates a dense vector embedding (768-dim) for a single query.
     return generate_embeddings([query], model_name=model_name)[0]

@@ -13,10 +13,10 @@ pydantic-settings==2.15.0
 python-dotenv==1.2.4
 
 # Text Parsing & Chunking
-langchain-text-splitters
-pypdf
-python-multipart
+langchain-text-splitters==1.1.3
+pypdf==6.19.0
+python-multipart==0.0.32
 
 # Embeddings & Re-ranking
-fastembed
-flashrank
+fastembed==0.8.1
+FlashRank==0.2.10

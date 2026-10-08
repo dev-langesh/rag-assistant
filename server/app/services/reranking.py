@@ -10,7 +10,7 @@ _ranker: Optional[Ranker] = None
 
 
 def get_ranker(model_name: str = DEFAULT_RERANK_MODEL) -> Ranker:
-    """Returns a singleton instance of the FlashRank Ranker."""
+    # Returns a singleton instance of the FlashRank Ranker.
     global _ranker
     if _ranker is None:
         _ranker = Ranker(model_name=model_name)
@@ -35,11 +35,11 @@ def rerank_results(
     top_k: int = 4,
     model_name: str = DEFAULT_RERANK_MODEL,
 ) -> List[RerankedResult]:
-    """
-    Stage 2 Re-Ranking:
-    Evaluates candidate passages using a cross-encoder (joint self-attention over query + document)
-    and trims candidates down to the top-k highest-fidelity passages.
-    """
+   
+    # Stage 2 Re-Ranking:
+    # Evaluates candidate passages using a cross-encoder (joint self-attention over query + document)
+    # and trims candidates down to the top-k highest-fidelity passages.
+    
     if not candidates:
         return []
 
@@ -89,11 +89,11 @@ async def retrieve_and_rerank(
     k: int = 60,
     model_name: str = DEFAULT_RERANK_MODEL,
 ) -> List[RerankedResult]:
-    """
-    Two-Stage Hybrid Search & Re-Ranking Pipeline:
-    - Stage 1: Hybrid RRF retrieval (dense + sparse CTE in PostgreSQL) retrieves top candidates.
-    - Stage 2: Cross-encoder re-ranking (FlashRank) scores and trims down to the top passages.
-    """
+    
+    # Two-Stage Hybrid Search & Re-Ranking Pipeline:
+    # - Stage 1: Hybrid RRF retrieval (dense + sparse CTE in PostgreSQL) retrieves top candidates.
+    # - Stage 2: Cross-encoder re-ranking (FlashRank) scores and trims down to the top passages.
+   
     from app.services.retrieval import hybrid_search
 
     # Stage 1: Hybrid Retrieval
