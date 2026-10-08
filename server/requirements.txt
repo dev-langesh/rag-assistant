@@ -20,3 +20,6 @@ python-multipart==0.0.32
 # Embeddings & Re-ranking
 fastembed==0.8.1
 FlashRank==0.2.10
+
+# LLM & Generation
+google-genai==2.29.0
