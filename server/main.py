@@ -1,8 +1,9 @@
+import uvicorn
 from dotenv import load_dotenv
-import asyncio
 
 load_dotenv()
 
-from init_db import init_db
+from app.main import app
 
-asyncio.run(init_db())
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

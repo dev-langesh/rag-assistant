@@ -18,3 +18,14 @@ async def init_db():
         # Create all tables and HNSW / GIN indexes
         await conn.run_sync(Base.metadata.create_all)
     print("Database schema and vector indexes created successfully.")
+
+
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
