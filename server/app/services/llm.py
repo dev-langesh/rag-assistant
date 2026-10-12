@@ -73,6 +73,10 @@ def build_grounded_user_prompt(query: str, chunks: Sequence[Any]) -> str:
 User Question: {query}"""
 
 
+import asyncio
+FALLBACK_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"]
+
+
 async def stream_rag_response(
     query: str,
     chunks: Sequence[Any],
@@ -81,6 +85,7 @@ async def stream_rag_response(
 ) -> AsyncGenerator[str, None]:
     """
     Streams response tokens from Gemini with strict negative constraints and inline citations.
+    Includes automatic fallback across flash models on transient server spikes.
     """
     client = get_gemini_client(api_key=api_key)
     model_name = model or settings.GEMINI_MODEL
@@ -91,15 +96,30 @@ async def stream_rag_response(
         temperature=0.0,
     )
 
-    response_stream = await client.aio.models.generate_content_stream(
-        model=model_name,
-        contents=prompt,
-        config=config,
-    )
+    models_to_try = [model_name] + [m for m in FALLBACK_MODELS if m != model_name]
+    last_error = None
 
-    async for chunk in response_stream:
-        if chunk.text:
-            yield chunk.text
+    for m in models_to_try:
+        try:
+            response_stream = await client.aio.models.generate_content_stream(
+                model=m,
+                contents=prompt,
+                config=config,
+            )
+            async for chunk in response_stream:
+                if chunk.text:
+                    yield chunk.text
+            return
+        except Exception as exc:
+            last_error = exc
+            err_str = str(exc)
+            if any(code in err_str for code in ("503", "429", "500", "UNAVAILABLE", "RESOURCE_EXHAUSTED")):
+                await asyncio.sleep(1)
+                continue
+            raise exc
+
+    if last_error:
+        raise last_error
 
 
 async def generate_rag_response(
@@ -109,7 +129,7 @@ async def generate_rag_response(
     api_key: Optional[str] = None,
 ) -> str:
     """
-    Generates a complete non-streaming grounded response from Gemini.
+    Generates a complete non-streaming grounded response from Gemini with transient fallback.
     """
     client = get_gemini_client(api_key=api_key)
     model_name = model or settings.GEMINI_MODEL
@@ -120,10 +140,24 @@ async def generate_rag_response(
         temperature=0.0,
     )
 
-    response = await client.aio.models.generate_content(
-        model=model_name,
-        contents=prompt,
-        config=config,
-    )
+    models_to_try = [model_name] + [m for m in FALLBACK_MODELS if m != model_name]
+    last_error = None
 
-    return response.text or ""
+    for m in models_to_try:
+        try:
+            response = await client.aio.models.generate_content(
+                model=m,
+                contents=prompt,
+                config=config,
+            )
+            return response.text or ""
+        except Exception as exc:
+            last_error = exc
+            err_str = str(exc)
+            if any(code in err_str for code in ("503", "429", "500", "UNAVAILABLE", "RESOURCE_EXHAUSTED")):
+                continue
+            raise exc
+
+    if last_error:
+        raise last_error
+

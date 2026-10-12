@@ -88,6 +88,7 @@ async def retrieve_and_rerank(
     final_top_k: int = 4,
     k: int = 60,
     model_name: str = DEFAULT_RERANK_MODEL,
+    session: Optional[Any] = None,
 ) -> List[RerankedResult]:
     
     # Two-Stage Hybrid Search & Re-Ranking Pipeline:
@@ -97,7 +98,7 @@ async def retrieve_and_rerank(
     from app.services.retrieval import hybrid_search
 
     # Stage 1: Hybrid Retrieval
-    candidates = await hybrid_search(query=query, limit=stage1_limit, k=k)
+    candidates = await hybrid_search(query=query, limit=stage1_limit, k=k, session=session)
 
     # Stage 2: Cross-Encoder Re-Ranking
     return rerank_results(query=query, candidates=candidates, top_k=final_top_k, model_name=model_name)
