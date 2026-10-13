@@ -7,7 +7,7 @@ class Settings(BaseSettings):
         default="postgresql+asyncpg://rag_user:rag_password@localhost:5432/rag_db"
     )
     GEMINI_API_KEY: str = Field(default="")
-    GEMINI_MODEL: str = Field(default="gemini-3.5-flash")
+    GEMINI_MODEL: str = Field(default="gemini-3.5-flash-lite")
     EMBEDDING_MODEL: str = Field(default="BAAI/bge-base-en-v1.5")
     RERANK_MODEL: str = Field(default="ms-marco-TinyBERT-L-2-v2")
 

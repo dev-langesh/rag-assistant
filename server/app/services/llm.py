@@ -74,7 +74,7 @@ User Question: {query}"""
 
 
 import asyncio
-FALLBACK_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-flash-latest"]
+FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-flash-latest"]
 
 
 async def stream_rag_response(
