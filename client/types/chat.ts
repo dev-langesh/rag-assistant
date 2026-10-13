@@ -8,6 +8,11 @@ export interface Citation {
   metadata?: Record<string, any>;
 }
 
+export interface ChatMessageContext {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";

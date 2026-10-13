@@ -1,9 +1,16 @@
 import { API_BASE_URL, apiClient } from "@/lib/axios";
-import { Citation, ChatStreamTokenPayload, ChatStreamErrorPayload, ChatStreamDonePayload } from "@/types/chat";
+import {
+  Citation,
+  ChatMessageContext,
+  ChatStreamTokenPayload,
+  ChatStreamErrorPayload,
+  ChatStreamDonePayload,
+} from "@/types/chat";
 
 export interface StreamChatParams {
   query: string;
   top_k?: number;
+  context?: ChatMessageContext[];
   signal?: AbortSignal;
   onCitations?: (citations: Citation[]) => void;
   onToken?: (token: string) => void;
@@ -21,10 +28,15 @@ export const chatApi = {
   /**
    * Synchronous non-streaming chat request
    */
-  async sendSync(query: string, top_k: number = 4): Promise<SyncChatResponse> {
+  async sendSync(
+    query: string,
+    top_k: number = 4,
+    context: ChatMessageContext[] = []
+  ): Promise<SyncChatResponse> {
     const response = await apiClient.post<SyncChatResponse>("/chat", {
       query,
       top_k,
+      context,
     });
     return response.data;
   },
@@ -35,6 +47,7 @@ export const chatApi = {
   async stream({
     query,
     top_k = 10,
+    context = [],
     signal,
     onCitations,
     onToken,
@@ -51,7 +64,7 @@ export const chatApi = {
           "Content-Type": "application/json",
           Accept: "text/event-stream",
         },
-        body: JSON.stringify({ query, top_k }),
+        body: JSON.stringify({ query, top_k, context }),
         signal,
       });
     } catch (err: unknown) {

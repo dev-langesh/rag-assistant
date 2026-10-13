@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "sonner";
-import { ChatMessage, Citation } from "@/types/chat";
+import { ChatMessage, ChatMessageContext, Citation } from "@/types/chat";
 import { chatApi } from "@/lib/api/chat";
 
 export function useChat() {
@@ -44,7 +44,7 @@ export function useChat() {
   }, []);
 
   const sendMessage = useCallback(
-    async (queryOverride?: string) => {
+    async (queryOverride?: string, historyOverride?: ChatMessage[]) => {
       const queryToSend = (queryOverride ?? input).trim();
       if (!queryToSend || isStreaming) return;
 
@@ -67,7 +67,21 @@ export function useChat() {
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, userMessage, assistantMessage]);
+      // Extract prior conversation history (excluding failed or empty messages)
+      const priorHistory = historyOverride ?? messages;
+      const contextPayload: ChatMessageContext[] = priorHistory
+        .filter((m) => !m.error && m.content.trim().length > 0)
+        .slice(-10)
+        .map((m) => ({
+          role: m.role,
+          content: m.content.trim(),
+        }));
+
+      setMessages((prev) => [
+        ...(historyOverride ?? prev),
+        userMessage,
+        assistantMessage,
+      ]);
       setInput("");
       setError(null);
       setIsStreaming(true);
@@ -78,13 +92,12 @@ export function useChat() {
       await chatApi.stream({
         query: queryToSend,
         top_k: 10,
+        context: contextPayload,
         signal: controller.signal,
         onCitations: (citations) => {
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === assistantMessageId
-                ? { ...msg, citations }
-                : msg
+              msg.id === assistantMessageId ? { ...msg, citations } : msg
             )
           );
         },
@@ -133,7 +146,7 @@ export function useChat() {
         },
       });
     },
-    [input, isStreaming]
+    [input, isStreaming, messages]
   );
 
   const retryMessage = useCallback(
@@ -144,18 +157,20 @@ export function useChat() {
 
       // Find the preceding user query
       let queryToRetry = "";
+      let userMsgIdx = -1;
       for (let i = failedIdx - 1; i >= 0; i--) {
         if (messages[i].role === "user") {
           queryToRetry = messages[i].content;
+          userMsgIdx = i;
           break;
         }
       }
 
-      if (!queryToRetry) return;
+      if (!queryToRetry || userMsgIdx === -1) return;
 
-      // Remove the failed assistant message and re-send
-      setMessages((prev) => prev.filter((m) => m.id !== failedMessageId));
-      await sendMessage(queryToRetry);
+      // Slice out the failed message and its user query from history
+      const priorHistory = messages.slice(0, userMsgIdx);
+      await sendMessage(queryToRetry, priorHistory);
     },
     [messages, sendMessage]
   );
