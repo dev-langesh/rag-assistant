@@ -60,6 +60,7 @@ async def chat_stream(
             async for token in stream_rag_response(
                 query=request.query,
                 chunks=reranked_chunks,
+                context=request.context,
             ):
                 payload = json.dumps({"token": token, "text": token})
                 yield f"event: message\ndata: {payload}\n\n"
@@ -106,6 +107,7 @@ async def chat_sync(
     answer = await generate_rag_response(
         query=request.query,
         chunks=reranked_chunks,
+        context=request.context,
     )
 
     citations = [

@@ -1,5 +1,6 @@
+import asyncio
 import os
-from typing import Any, AsyncGenerator, List, Optional, Sequence
+from typing import Any, AsyncGenerator, List, Optional, Sequence, Union
 from google import genai
 from google.genai import types
 
@@ -19,6 +20,8 @@ STRICT GROUNDING CONSTRAINTS:
    - ONLY cite IDs present inside the provided <chunk id="..."> tags. Never invent an ID.
 4. Direct & Objective Tone: Be direct, clear, and objective. Avoid meta-commentary like "According to the XML sources".
 """
+
+FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-flash-latest"]
 
 
 def get_gemini_client(api_key: Optional[str] = None) -> genai.Client:
@@ -73,23 +76,92 @@ def build_grounded_user_prompt(query: str, chunks: Sequence[Any]) -> str:
 User Question: {query}"""
 
 
-import asyncio
-FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-flash-latest"]
+def build_gemini_contents(
+    query: str,
+    chunks: Sequence[Any],
+    context: Optional[Sequence[Any]] = None,
+) -> Union[str, List[types.Content]]:
+    """
+    Builds the contents payload for Gemini:
+    - If context is empty, returns the single grounded prompt string.
+    - If context is present, constructs alternating types.Content turns
+      and ends with the grounded prompt containing XML sources and latest question.
+    """
+    final_user_prompt = build_grounded_user_prompt(query=query, chunks=chunks)
+
+    if not context:
+        return final_user_prompt
+
+    turns: List[types.Content] = []
+
+    for item in context:
+        if hasattr(item, "role") and hasattr(item, "content"):
+            role = str(item.role).strip().lower()
+            text = str(item.content).strip()
+        elif isinstance(item, dict):
+            role = str(item.get("role", "")).strip().lower()
+            text = str(item.get("content", "")).strip()
+        else:
+            continue
+
+        if not text:
+            continue
+
+        normalized_role = "user" if role in ("user", "human") else "model"
+
+        # Gemini conversation must start with a user message
+        if not turns and normalized_role != "user":
+            continue
+
+        # If consecutive turns have the same role, combine them
+        if turns and turns[-1].role == normalized_role:
+            prev_text = turns[-1].parts[0].text or ""
+            turns[-1] = types.Content(
+                role=normalized_role,
+                parts=[types.Part.from_text(text=f"{prev_text}\n\n{text}")],
+            )
+        else:
+            turns.append(
+                types.Content(
+                    role=normalized_role,
+                    parts=[types.Part.from_text(text=text)],
+                )
+            )
+
+    # Append the final grounded user turn
+    if turns and turns[-1].role == "user":
+        # If the last turn in context was user, combine with final prompt
+        prev_text = turns[-1].parts[0].text or ""
+        turns[-1] = types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=f"{prev_text}\n\n{final_user_prompt}")],
+        )
+    else:
+        turns.append(
+            types.Content(
+                role="user",
+                parts=[types.Part.from_text(text=final_user_prompt)],
+            )
+        )
+
+    return turns
 
 
 async def stream_rag_response(
     query: str,
     chunks: Sequence[Any],
+    context: Optional[Sequence[Any]] = None,
     model: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> AsyncGenerator[str, None]:
     """
-    Streams response tokens from Gemini with strict negative constraints and inline citations.
+    Streams response tokens from Gemini with strict negative constraints, inline citations,
+    and multi-turn conversation context.
     Includes automatic fallback across flash models on transient server spikes.
     """
     client = get_gemini_client(api_key=api_key)
     model_name = model or settings.GEMINI_MODEL
-    prompt = build_grounded_user_prompt(query=query, chunks=chunks)
+    contents = build_gemini_contents(query=query, chunks=chunks, context=context)
 
     config = types.GenerateContentConfig(
         system_instruction=SYSTEM_INSTRUCTION,
@@ -103,7 +175,7 @@ async def stream_rag_response(
         try:
             response_stream = await client.aio.models.generate_content_stream(
                 model=m,
-                contents=prompt,
+                contents=contents,
                 config=config,
             )
             async for chunk in response_stream:
@@ -125,15 +197,16 @@ async def stream_rag_response(
 async def generate_rag_response(
     query: str,
     chunks: Sequence[Any],
+    context: Optional[Sequence[Any]] = None,
     model: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> str:
     """
-    Generates a complete non-streaming grounded response from Gemini with transient fallback.
+    Generates a complete non-streaming grounded response from Gemini with multi-turn conversation context.
     """
     client = get_gemini_client(api_key=api_key)
     model_name = model or settings.GEMINI_MODEL
-    prompt = build_grounded_user_prompt(query=query, chunks=chunks)
+    contents = build_gemini_contents(query=query, chunks=chunks, context=context)
 
     config = types.GenerateContentConfig(
         system_instruction=SYSTEM_INSTRUCTION,
@@ -147,7 +220,7 @@ async def generate_rag_response(
         try:
             response = await client.aio.models.generate_content(
                 model=m,
-                contents=prompt,
+                contents=contents,
                 config=config,
             )
             return response.text or ""
@@ -155,9 +228,9 @@ async def generate_rag_response(
             last_error = exc
             err_str = str(exc)
             if any(code in err_str for code in ("503", "429", "500", "UNAVAILABLE", "RESOURCE_EXHAUSTED")):
+                await asyncio.sleep(1)
                 continue
             raise exc
 
     if last_error:
         raise last_error
-
