@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
@@ -42,3 +43,11 @@ class CitationItem(BaseModel):
     score: float
     initial_rrf_score: Optional[float] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ChatMessageResponse(BaseModel):
+    id: str
+    role: str
+    content: str
+    citations: Optional[List[Dict[str, Any]]] = None
+    created_at: datetime

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Column,
@@ -71,4 +71,20 @@ class Chunk(Base):
             tsv,
             postgresql_using="gin",
         ),
+    )
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    role: Mapped[str] = mapped_column(String(20), nullable=False)  # "user" | "assistant"
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    citations: Mapped[Optional[List[Dict[str, Any]]]] = mapped_column(
+        JSONB, nullable=True, default=list
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
