@@ -18,7 +18,7 @@ export function ChatArea({ className }: ChatAreaProps) {
     setInput,
     isStreaming,
     isLoadingHistory,
-    activeCitation,
+    activeCitations,
     isCitationOpen,
     sendMessage,
     stopStreaming,
@@ -57,7 +57,7 @@ export function ChatArea({ className }: ChatAreaProps) {
 
       {/* 4. Slide-out Citation Inspector Drawer */}
       <CitationInspector
-        citation={activeCitation}
+        citations={activeCitations}
         isOpen={isCitationOpen}
         onClose={closeCitation}
       />

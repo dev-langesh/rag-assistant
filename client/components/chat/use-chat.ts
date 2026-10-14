@@ -18,7 +18,7 @@ export function useChat() {
   const [error, setError] = useState<string | null>(null);
 
   // Citation Inspector State
-  const [activeCitation, setActiveCitation] = useState<Citation | null>(null);
+  const [activeCitations, setActiveCitations] = useState<Citation[]>([]);
   const [isCitationOpen, setIsCitationOpen] = useState<boolean>(false);
 
   // AbortController ref to cancel active stream
@@ -227,7 +227,7 @@ export function useChat() {
       setMessages([]);
       setInput("");
       setError(null);
-      setActiveCitation(null);
+      setActiveCitations([]);
       setIsCitationOpen(false);
       toast.success("Chat history cleared");
     } catch (err: unknown) {
@@ -236,8 +236,9 @@ export function useChat() {
     }
   }, [isStreaming, stopStreaming]);
 
-  const selectCitation = useCallback((citation: Citation) => {
-    setActiveCitation(citation);
+  const selectCitations = useCallback((citations: Citation[] | Citation) => {
+    const list = Array.isArray(citations) ? citations : [citations];
+    setActiveCitations(list);
     setIsCitationOpen(true);
   }, []);
 
@@ -252,13 +253,15 @@ export function useChat() {
     isStreaming,
     isLoadingHistory,
     error,
-    activeCitation,
+    activeCitations,
+    activeCitation: activeCitations[0] || null,
     isCitationOpen,
     sendMessage,
     stopStreaming,
     retryMessage,
     clearChat,
-    selectCitation,
+    selectCitation: selectCitations,
+    selectCitations,
     closeCitation,
   };
 }

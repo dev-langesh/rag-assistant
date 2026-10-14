@@ -9,7 +9,7 @@ import { ChatEmptyState } from "./chat-empty-state";
 interface ChatMessageListProps {
   messages: ChatMessage[];
   isLoadingHistory?: boolean;
-  onSelectCitation: (citation: Citation) => void;
+  onSelectCitation: (citations: Citation[]) => void;
   onSelectPrompt: (prompt: string) => void;
   onRetry?: (messageId: string) => void;
 }

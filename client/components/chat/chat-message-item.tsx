@@ -3,15 +3,15 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { User, Sparkles, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
+import { User, Sparkles, AlertCircle, RefreshCw, Loader2, BookOpen } from "lucide-react";
 import { ChatMessage, Citation } from "@/types/chat";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { CitationPills } from "./citation-pills";
+import { transformMarkdownParagraphCitations } from "@/lib/citations";
 
 interface ChatMessageItemProps {
   message: ChatMessage;
-  onSelectCitation: (citation: Citation) => void;
+  onSelectCitation: (citations: Citation[]) => void;
   onRetry?: (messageId: string) => void;
 }
 
@@ -21,6 +21,26 @@ export function ChatMessageItem({
   onRetry,
 }: ChatMessageItemProps) {
   const isUser = message.role === "user";
+
+  // Map chunk UUIDs to Citation objects for instant O(1) lookup
+  const citationMap = React.useMemo(() => {
+    const map = new Map<string, Citation>();
+    if (message.citations) {
+      for (const c of message.citations) {
+        if (c.id) {
+          map.set(c.id, c);
+          map.set(c.id.toLowerCase(), c);
+        }
+      }
+    }
+    return map;
+  }, [message.citations]);
+
+  // Aggregate bracketed citations per paragraph into a single badge link
+  const displayContent = React.useMemo(() => {
+    if (isUser || !message.content) return message.content;
+    return transformMarkdownParagraphCitations(message.content);
+  }, [isUser, message.content]);
 
   return (
     <div
@@ -40,7 +60,7 @@ export function ChatMessageItem({
           <>
             <Sparkles className="size-3.5 text-blue-500" />
             <span className="font-medium text-foreground">RAG Assistant</span>
-            <span className="text-[10px] text-muted-foreground">• Strictly Grounded</span>
+            {/* <span className="text-[10px] text-muted-foreground">• Strictly Grounded</span> */}
           </>
         )}
       </div>
@@ -67,11 +87,71 @@ export function ChatMessageItem({
             )}
 
             {/* Markdown Answer Content */}
-            {message.content && (
+            {displayContent && (
               <div className="prose prose-invert max-w-none text-sm break-words leading-relaxed [&>p]:mb-2 [&>p:last-child]:mb-0 [&>ul]:list-disc [&>ul]:pl-4 [&>ol]:list-decimal [&>ol]:pl-4 [&>pre]:bg-muted/80 [&>pre]:p-3 [&>pre]:rounded-lg [&>pre]:text-xs [&>code]:bg-muted [&>code]:px-1 [&>code]:py-0.5 [&>code]:rounded [&>code]:text-xs">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {message.content}
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    a: ({ href, children, ...props }) => {
+                      if (href && href.startsWith("#citation:")) {
+                        const idString = href.replace("#citation:", "");
+                        const ids = idString
+                          .split(",")
+                          .map((id) => id.trim())
+                          .filter(Boolean);
+
+                        return (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+
+                              const matching = ids
+                                .map(
+                                  (id) =>
+                                    citationMap.get(id) ||
+                                    citationMap.get(id.toLowerCase())
+                                )
+                                .filter(Boolean) as Citation[];
+
+                              if (matching.length > 0) {
+                                onSelectCitation(matching);
+                              } else if (
+                                message.citations &&
+                                message.citations.length > 0
+                              ) {
+                                onSelectCitation(message.citations);
+                              }
+                            }}
+                            className="inline-flex items-center gap-1.5 mx-1 px-2 py-0.5 align-middle text-[11px] font-mono rounded-md bg-secondary/90 border border-border hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-400 transition-colors cursor-pointer text-foreground not-prose shadow-xs select-none"
+                            title={`Inspect source citations for this passage`}
+                          >
+                            <BookOpen className="size-3 text-blue-500" />
+                            <span className="font-semibold text-blue-400">
+                              {children}
+                            </span>
+                          </button>
+                        );
+                      }
+
+                      return (
+                        <a
+                          href={href}
+                          {...props}
+                          className="text-blue-500 underline underline-offset-2 hover:text-blue-400"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {children}
+                        </a>
+                      );
+                    },
+                  }}
+                >
+                  {displayContent}
                 </ReactMarkdown>
+
                 {message.isStreaming && (
                   <span className="inline-block size-1.5 bg-blue-500 rounded-full animate-pulse ml-1" />
                 )}
@@ -103,14 +183,6 @@ export function ChatMessageItem({
                   </Button>
                 )}
               </div>
-            )}
-
-            {/* Sources / Citations */}
-            {message.citations && message.citations.length > 0 && (
-              <CitationPills
-                citations={message.citations}
-                onSelectCitation={onSelectCitation}
-              />
             )}
           </div>
         )}
