@@ -5,6 +5,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from init_db import init_db
 from app.api.v1.router import api_router
 
+from app.services.embedding import get_embedding_model
+from app.services.reranking import get_ranker
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Pre-warm / load models into memory on server startup
+    get_embedding_model()
+    get_ranker()
+    yield
+
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
