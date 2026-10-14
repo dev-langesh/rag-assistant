@@ -1,3 +1,5 @@
+export const MAX_QUERY_LENGTH = 1000;
+
 export interface Citation {
   id: string;
   document_id: string;

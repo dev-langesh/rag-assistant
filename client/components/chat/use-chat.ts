@@ -2,7 +2,12 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "sonner";
-import { ChatMessage, ChatMessageContext, Citation } from "@/types/chat";
+import {
+  ChatMessage,
+  ChatMessageContext,
+  Citation,
+  MAX_QUERY_LENGTH,
+} from "@/types/chat";
 import { chatApi } from "@/lib/api/chat";
 
 export function useChat() {
@@ -47,6 +52,13 @@ export function useChat() {
     async (queryOverride?: string, historyOverride?: ChatMessage[]) => {
       const queryToSend = (queryOverride ?? input).trim();
       if (!queryToSend || isStreaming) return;
+
+      if (queryToSend.length > MAX_QUERY_LENGTH) {
+        toast.error("Question exceeds maximum length", {
+          description: `Please limit questions to ${MAX_QUERY_LENGTH} characters.`,
+        });
+        return;
+      }
 
       const userMessageId = `user-${Date.now()}`;
       const assistantMessageId = `asst-${Date.now()}`;

@@ -10,17 +10,11 @@ from app.services.reranking import get_ranker
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Initialize pgvector extension and database schema on startup
+    await init_db()
     # Pre-warm / load models into memory on server startup
     get_embedding_model()
     get_ranker()
-    yield
-
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Initialize pgvector extension and database schema on startup
-    await init_db()
     yield
 
 
