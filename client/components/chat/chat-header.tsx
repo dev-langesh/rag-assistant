@@ -27,27 +27,15 @@ export function ChatHeader({
         <div className="flex items-center gap-2">
           <div className="size-2 rounded-full bg-blue-500 animate-pulse" />
           <h2 className="text-sm font-semibold tracking-tight text-foreground">
-            RAG Assistant
+            Document Assistant
           </h2>
         </div>
 
-        <Badge variant="outline" className="text-[10px] font-mono px-2 py-0 border-blue-500/30 text-blue-400 bg-blue-500/5">
-          gemini-3.5-flash
-        </Badge>
+        
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="hidden md:flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1 font-mono text-[11px]">
-            <Cpu className="size-3.5 text-blue-500" />
-            FlashRank
-          </span>
-          <span className="text-border">|</span>
-          <span className="flex items-center gap-1 text-[11px]">
-            <ShieldCheck className="size-3.5 text-emerald-500" />
-            Strict Grounding
-          </span>
-        </div>
+        
 
         {messageCount > 0 && (
           <Tooltip>

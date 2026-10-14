@@ -86,9 +86,9 @@ export function ChatInput({
           </div>
         </form>
 
-        <p className="text-center text-[11px] text-muted-foreground">
+        {/* <p className="text-center text-[11px] text-muted-foreground">
           Strict Grounding: Answers cite passages directly from PostgreSQL pgvector.
-        </p>
+        </p> */}
       </div>
     </div>
   );

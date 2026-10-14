@@ -52,7 +52,7 @@ export function ChatEmptyState({ onSelectPrompt }: ChatEmptyStateProps) {
       </div>
 
       {/* System tags */}
-      <div className="pt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+      {/* <div className="pt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
         <span className="flex items-center gap-1">
           <ShieldCheck className="size-3.5 text-emerald-500" />
           Zero Hallucination Grounding
@@ -62,7 +62,7 @@ export function ChatEmptyState({ onSelectPrompt }: ChatEmptyStateProps) {
           <Cpu className="size-3.5 text-blue-500" />
           Token-by-Token SSE
         </span>
-      </div>
+      </div> */}
     </div>
   );
 }
