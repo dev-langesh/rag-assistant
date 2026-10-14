@@ -2,6 +2,7 @@ import { API_BASE_URL, apiClient } from "@/lib/axios";
 import {
   Citation,
   ChatMessageContext,
+  ChatHistoryMessage,
   ChatStreamTokenPayload,
   ChatStreamErrorPayload,
   ChatStreamDonePayload,
@@ -25,6 +26,21 @@ export interface SyncChatResponse {
 }
 
 export const chatApi = {
+  /**
+   * Fetches saved chat conversation history from PostgreSQL
+   */
+  async getHistory(): Promise<ChatHistoryMessage[]> {
+    const response = await apiClient.get<ChatHistoryMessage[]>("/chat/history");
+    return response.data;
+  },
+
+  /**
+   * Clears saved chat conversation history from PostgreSQL
+   */
+  async clearHistory(): Promise<void> {
+    await apiClient.delete("/chat/history");
+  },
+
   /**
    * Synchronous non-streaming chat request
    */

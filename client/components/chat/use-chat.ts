@@ -14,6 +14,7 @@ export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState<string>("");
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   // Citation Inspector State
@@ -23,9 +24,39 @@ export function useChat() {
   // AbortController ref to cancel active stream
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Clean up abort controller on unmount
+  // Fetch persistent conversation history on mount
   useEffect(() => {
+    let isMounted = true;
+
+    async function loadHistory() {
+      try {
+        setIsLoadingHistory(true);
+        const history = await chatApi.getHistory();
+        if (!isMounted) return;
+
+        if (history && history.length > 0) {
+          const mapped: ChatMessage[] = history.map((item) => ({
+            id: item.id,
+            role: item.role,
+            content: item.content,
+            citations: item.citations || [],
+            timestamp: new Date(item.created_at),
+          }));
+          setMessages(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to load chat history from database:", err);
+      } finally {
+        if (isMounted) {
+          setIsLoadingHistory(false);
+        }
+      }
+    }
+
+    loadHistory();
+
     return () => {
+      isMounted = false;
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -187,15 +218,22 @@ export function useChat() {
     [messages, sendMessage]
   );
 
-  const clearChat = useCallback(() => {
+  const clearChat = useCallback(async () => {
     if (isStreaming) {
       stopStreaming();
     }
-    setMessages([]);
-    setInput("");
-    setError(null);
-    setActiveCitation(null);
-    setIsCitationOpen(false);
+    try {
+      await chatApi.clearHistory();
+      setMessages([]);
+      setInput("");
+      setError(null);
+      setActiveCitation(null);
+      setIsCitationOpen(false);
+      toast.success("Chat history cleared");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to clear chat history";
+      toast.error("Error clearing history", { description: msg });
+    }
   }, [isStreaming, stopStreaming]);
 
   const selectCitation = useCallback((citation: Citation) => {
@@ -212,6 +250,7 @@ export function useChat() {
     input,
     setInput,
     isStreaming,
+    isLoadingHistory,
     error,
     activeCitation,
     isCitationOpen,

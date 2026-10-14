@@ -17,6 +17,7 @@ export function ChatArea({ className }: ChatAreaProps) {
     input,
     setInput,
     isStreaming,
+    isLoadingHistory,
     activeCitation,
     isCitationOpen,
     sendMessage,
@@ -39,6 +40,7 @@ export function ChatArea({ className }: ChatAreaProps) {
       {/* 2. Message History & Streaming Display */}
       <ChatMessageList
         messages={messages}
+        isLoadingHistory={isLoadingHistory}
         onSelectCitation={selectCitation}
         onSelectPrompt={(prompt) => sendMessage(prompt)}
         onRetry={retryMessage}

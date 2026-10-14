@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { Loader2 } from "lucide-react";
 import { ChatMessage, Citation } from "@/types/chat";
 import { ChatMessageItem } from "./chat-message-item";
 import { ChatEmptyState } from "./chat-empty-state";
 
 interface ChatMessageListProps {
   messages: ChatMessage[];
+  isLoadingHistory?: boolean;
   onSelectCitation: (citation: Citation) => void;
   onSelectPrompt: (prompt: string) => void;
   onRetry?: (messageId: string) => void;
@@ -14,6 +16,7 @@ interface ChatMessageListProps {
 
 export function ChatMessageList({
   messages,
+  isLoadingHistory = false,
   onSelectCitation,
   onSelectPrompt,
   onRetry,
@@ -24,6 +27,15 @@ export function ChatMessageList({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  if (isLoadingHistory && messages.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-muted-foreground text-xs gap-2">
+        <Loader2 className="size-5 animate-spin text-blue-500" />
+        <span className="text-[11px]">Loading conversation history...</span>
+      </div>
+    );
+  }
 
   if (messages.length === 0) {
     return <ChatEmptyState onSelectPrompt={onSelectPrompt} />;

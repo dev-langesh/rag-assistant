@@ -25,6 +25,14 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+export interface ChatHistoryMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  citations?: Citation[];
+  created_at: string;
+}
+
 export interface ChatStreamTokenPayload {
   token: string;
   text?: string;
