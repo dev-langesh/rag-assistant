@@ -1,0 +1,70 @@
+services:
+  pgvector:
+    image: pgvector/pgvector:pg17
+    container_name: rag-pgvector
+    restart: unless-stopped
+    env_file: ./server/.env.psql
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rag_user} -d ${POSTGRES_DB:-rag_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rag-network
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: rag-server
+    restart: unless-stopped
+    env_file: ./server/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - model_cache:/root/.cache
+    depends_on:
+      pgvector:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    networks:
+      - rag-network
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+    container_name: rag-client
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+    ports:
+      - "${CLIENT_PORT:-3000}:3000"
+    depends_on:
+      server:
+        condition: service_healthy
+    networks:
+      - rag-network
+
+volumes:
+  pgdata:
+    name: pgdata
+  model_cache:
+    name: rag_model_cache
+
+networks:
+  rag-network:
+    name: rag-network
+    driver: bridge
