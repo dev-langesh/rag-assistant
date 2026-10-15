@@ -2,9 +2,10 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 from flashrank import Ranker, RerankRequest
 from app.services.retrieval import SearchResult
+from app.core.config import settings
 
 # Default lightweight cross-encoder ONNX model (runs in ~10-20ms on CPU)
-DEFAULT_RERANK_MODEL = "ms-marco-TinyBERT-L-2-v2"
+DEFAULT_RERANK_MODEL = settings.RERANK_MODEL
 
 _ranker: Optional[Ranker] = None
 

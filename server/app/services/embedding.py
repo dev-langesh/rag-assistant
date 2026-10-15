@@ -1,8 +1,8 @@
+from server.app.core.config import settings
 from typing import List, Sequence
 from fastembed import TextEmbedding
 
-# BAAI/bge-base-en-v1.5 produces 768-dimensional vectors matching the Vector(768) column
-DEFAULT_MODEL_NAME = "BAAI/bge-base-en-v1.5"
+DEFAULT_MODEL_NAME = settings.EMBEDDING_MODEL
 
 _model: TextEmbedding | None = None
 
